@@ -1,0 +1,956 @@
+{% comment %}
+THE GALLERY - Shopify Theme
+Clothing & Accessories Store with Fog Effect and Music Player
+{% endcomment %}
+
+<!DOCTYPE html>
+<html lang="{{ shop.locale }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }}</title>
+    
+    {{ content_for_header }}
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000000;
+            font-family: Arial, sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Lightning Background */
+        .lightning-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .lightning {
+            position: absolute;
+            width: 2px;
+            background: linear-gradient(to bottom, #ff0080, #00d9ff);
+            filter: blur(1px);
+            animation: crackle 2s infinite;
+        }
+
+        @keyframes crackle {
+            0% {
+                opacity: 0;
+                height: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 1;
+                height: 100vh;
+            }
+            100% {
+                opacity: 0;
+                height: 100vh;
+            }
+        }
+
+        /* Fog Effect */
+        .fog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, rgba(200, 200, 200, 0.3) 0%, rgba(150, 150, 150, 0.5) 100%);
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 0.6s ease-in-out;
+        }
+
+        .fog-overlay.active {
+            opacity: 1;
+        }
+
+        .fog-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .fog-particle {
+            position: absolute;
+            background: radial-gradient(ellipse, rgba(255, 255, 255, 0.4), transparent);
+            border-radius: 50%;
+            animation: fogFloat 20s infinite;
+        }
+
+        @keyframes fogFloat {
+            0% {
+                opacity: 0;
+                transform: translateY(0) translateX(0);
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100vh) translateX(100px);
+            }
+        }
+
+        /* Music Player */
+        .music-player {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, rgba(255, 0, 128, 0.9), rgba(0, 217, 255, 0.9));
+            border-radius: 15px;
+            padding: 20px;
+            width: 350px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            z-index: 20;
+            border: 2px solid #d4af37;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .music-player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .music-player-title {
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .player-toggle {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .player-toggle:hover {
+            transform: scale(1.2);
+        }
+
+        .music-player.minimized {
+            width: auto;
+            padding: 10px 15px;
+        }
+
+        .music-player.minimized .player-controls,
+        .music-player.minimized .playlist,
+        .music-player.minimized .upload-section {
+            display: none;
+        }
+
+        .player-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+
+        .control-btn {
+            background: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #ff0080;
+            transition: all 0.3s;
+            font-size: 12px;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .progress {
+            height: 100%;
+            background: white;
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .time-display {
+            font-size: 12px;
+            color: white;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .volume-control {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .volume-control label {
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .volume-slider {
+            flex: 1;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            border: none;
+        }
+
+        .upload-section {
+            margin-bottom: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            padding-top: 15px;
+        }
+
+        .upload-label {
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 10px;
+            background: white;
+            color: #ff0080;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .file-input-label:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .playlist {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .playlist-title {
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .playlist-item {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 8px 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .playlist-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+
+        .playlist-item.active {
+            background: white;
+            color: #ff0080;
+            font-weight: bold;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .playlist-item.active .delete-btn {
+            color: #ff0080;
+        }
+
+        .delete-btn:hover {
+            color: #ff4444;
+        }
+
+        .audio-element {
+            display: none;
+        }
+
+        /* Header Section */
+        .header-container {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .gallery-title {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .the {
+            font-family: 'Old English Text', 'Blackletter', serif;
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(180deg, #cccccc 0%, #999999 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 3px rgba(0, 0, 0, 0.8);
+            filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 1));
+            font-style: italic;
+            position: relative;
+        }
+
+        .the::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 2px solid #000;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        .gallery {
+            font-family: 'Old English Text', 'Blackletter', serif;
+            font-size: 72px;
+            font-weight: bold;
+            background: linear-gradient(180deg, #cccccc 0%, #999999 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 6px rgba(0, 0, 0, 0.8);
+            filter: drop-shadow(3px 3px 8px rgba(0, 0, 0, 1));
+            font-style: italic;
+            position: relative;
+            letter-spacing: 4px;
+        }
+
+        .gallery::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -20px;
+            right: -20px;
+            bottom: -10px;
+            border: 3px solid #000;
+            border-radius: 12px;
+            pointer-events: none;
+        }
+
+        /* Clouds Container */
+        .clouds-container {
+            position: relative;
+            z-index: 2;
+            height: 120px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.6);
+            margin-bottom: 40px;
+        }
+
+        .cloud {
+            position: absolute;
+            width: 200px;
+            height: 60px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60"><path d="M50 30 Q50 10 70 10 Q80 0 90 10 Q110 5 120 25 Q150 15 160 35 Q140 50 100 50 Q60 50 50 30 Z" fill="%23999999" opacity="0.7"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            animation: float 8s infinite linear;
+        }
+
+        .cloud:nth-child(odd) {
+            filter: brightness(0.8);
+        }
+
+        .cloud:nth-child(1) {
+            top: 20px;
+            left: 0%;
+            animation: float 10s infinite linear;
+        }
+
+        .cloud:nth-child(2) {
+            top: 50px;
+            left: -200px;
+            animation: float 12s infinite linear;
+        }
+
+        .cloud:nth-child(3) {
+            top: 10px;
+            left: -400px;
+            animation: float 9s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(100vw);
+            }
+        }
+
+        .cloud-pulse {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            animation: colorPulse 2s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes colorPulse {
+            0%, 100% {
+                box-shadow: inset 0 0 20px rgba(255, 0, 128, 0.5);
+            }
+            50% {
+                box-shadow: inset 0 0 20px rgba(0, 217, 255, 0.5);
+            }
+        }
+
+        /* Main Content */
+        .content {
+            position: relative;
+            z-index: 2;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Product Grid */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .product-card {
+            position: relative;
+            perspective: 1000px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .product-card:hover {
+            transform: scale(1.02);
+        }
+
+        /* Paisley Frame */
+        .paisley-frame {
+            position: relative;
+            padding: 30px;
+            background: rgba(245, 245, 220, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(212, 175, 55, 0.4);
+            border: 3px double #d4af37;
+            animation: frameGlow 3s ease-in-out infinite;
+            transition: all 0.3s;
+        }
+
+        @keyframes frameGlow {
+            0%, 100% {
+                box-shadow: 0 10px 40px rgba(212, 175, 55, 0.4);
+            }
+            50% {
+                box-shadow: 0 10px 60px rgba(212, 175, 55, 0.8);
+            }
+        }
+
+        .paisley-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 10% 10%, #d4af37 2px, transparent 3px),
+                radial-gradient(circle at 90% 90%, #d4af37 2px, transparent 3px),
+                radial-gradient(circle at 90% 10%, #d4af37 2px, transparent 3px),
+                radial-gradient(circle at 10% 90%, #d4af37 2px, transparent 3px);
+            background-size: 50px 50px;
+            border-radius: 17px;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .product-image-wrapper {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #d4af37;
+            font-size: 18px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .product-image-placeholder::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(45deg, transparent 30%, rgba(212, 175, 55, 0.1) 50%, transparent 70%);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .product-title {
+            position: relative;
+            z-index: 1;
+            margin-top: 15px;
+            color: #333;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .product-price {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            color: #d4af37;
+            font-size: 16px;
+            margin-top: 8px;
+        }
+
+        /* Section Divider */
+        .section-divider {
+            height: 2px;
+            background: linear-gradient(to right, transparent, #ff0080, #00d9ff, transparent);
+            margin: 60px 0;
+            box-shadow: 0 0 15px rgba(255, 0, 128, 0.5);
+        }
+
+        .section-title {
+            color: #00d9ff;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+        }
+
+        .section-title.accessories {
+            color: #ff0080;
+            text-shadow: 0 0 10px rgba(255, 0, 128, 0.5);
+        }
+
+        @media (max-width: 600px) {
+            .music-player {
+                width: 90%;
+                right: 5%;
+                left: 5%;
+            }
+
+            .gallery {
+                font-size: 48px;
+            }
+
+            .the {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Lightning Background -->
+    <div class="lightning-bg" id="lightningBg"></div>
+
+    <!-- Fog Overlay -->
+    <div class="fog-overlay" id="fogOverlay">
+        <div class="fog-particles" id="fogParticles"></div>
+    </div>
+
+    <!-- Header -->
+    <div class="header-container">
+        <div class="gallery-title">
+            <div class="the">THE</div>
+            <div class="gallery">GALLERY</div>
+        </div>
+
+        <!-- Spinning Clouds -->
+        <div class="clouds-container">
+            <div class="cloud-pulse"></div>
+            <div class="cloud"></div>
+            <div class="cloud"></div>
+            <div class="cloud"></div>
+        </div>
+    </div>
+
+    <!-- Music Player -->
+    <div class="music-player" id="musicPlayer">
+        <div class="music-player-header">
+            <div class="music-player-title">🎵 Music Player</div>
+            <button class="player-toggle" id="playerToggle" onclick="togglePlayer()">−</button>
+        </div>
+
+        <div class="player-controls">
+            <button class="control-btn" onclick="playMusic()">▶ Play</button>
+            <button class="control-btn" onclick="pauseMusic()">⏸ Pause</button>
+            <button class="control-btn" onclick="stopMusic()">⏹ Stop</button>
+        </div>
+
+        <div class="progress-bar" id="progressBar" onclick="seekMusic(event)">
+            <div class="progress" id="progress"></div>
+        </div>
+
+        <div class="time-display" id="timeDisplay">0:00 / 0:00</div>
+
+        <div class="volume-control">
+            <label>🔊 Vol:</label>
+            <input type="range" min="0" max="100" value="70" class="volume-slider" id="volumeSlider" onchange="setVolume(this.value)">
+        </div>
+
+        <div class="upload-section">
+            <label class="upload-label">📁 Upload MP3:</label>
+            <div class="file-input-wrapper">
+                <input type="file" id="musicFile" accept=".mp3,.wav,.m4a" onchange="uploadMusic(event)" multiple>
+                <label for="musicFile" class="file-input-label">Choose File</label>
+            </div>
+        </div>
+
+        <div class="playlist">
+            <div class="playlist-title">📝 Playlist</div>
+            <div id="playlistContainer"></div>
+        </div>
+    </div>
+
+    <!-- Audio Element -->
+    <audio id="audioPlayer" class="audio-element"></audio>
+
+    <!-- Main Content -->
+    <div class="content">
+        <!-- Clothing Section -->
+        <h2 class="section-title">CLOTHING COLLECTION</h2>
+        
+        <div class="product-grid">
+            {% for product in collections.clothing.products limit: 6 %}
+                <div class="product-card" onclick="activateFog()">
+                    <div class="paisley-frame">
+                        <div class="paisley-pattern"></div>
+                        <div class="product-image-wrapper product-image-placeholder">
+                            {% if product.featured_image %}
+                                <img src="{{ product.featured_image | img_url: '300x300' }}" alt="{{ product.title }}" class="product-image">
+                            {% else %}
+                                <span>{{ product.title }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="product-title">{{ product.title }}</div>
+                        <div class="product-price">{{ product.price | money }}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Accessories Section -->
+        <h2 class="section-title accessories">ACCESSORIES COLLECTION</h2>
+        
+        <div class="product-grid">
+            {% for product in collections.accessories.products limit: 6 %}
+                <div class="product-card" onclick="activateFog()">
+                    <div class="paisley-frame">
+                        <div class="paisley-pattern"></div>
+                        <div class="product-image-wrapper product-image-placeholder">
+                            {% if product.featured_image %}
+                                <img src="{{ product.featured_image | img_url: '300x300' }}" alt="{{ product.title }}" class="product-image">
+                            {% else %}
+                                <span>{{ product.title }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="product-title">{{ product.title }}</div>
+                        <div class="product-price">{{ product.price | money }}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        // ============ FOG EFFECT ============
+        function activateFog() {
+            const fogOverlay = document.getElementById('fogOverlay');
+            fogOverlay.classList.add('active');
+
+            // Generate fog particles
+            const fogParticles = document.getElementById('fogParticles');
+            fogParticles.innerHTML = '';
+            
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'fog-particle';
+                particle.style.width = Math.random() * 300 + 100 + 'px';
+                particle.style.height = Math.random() * 200 + 100 + 'px';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * -100 - 50 + 'px';
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                particle.style.animationDuration = Math.random() * 10 + 15 + 's';
+                fogParticles.appendChild(particle);
+            }
+
+            // Remove fog after 3 seconds
+            setTimeout(() => {
+                fogOverlay.classList.remove('active');
+            }, 3000);
+        }
+
+        // ============ MUSIC PLAYER ============
+        let playlist = [];
+        let currentTrackIndex = 0;
+        const audio = document.getElementById('audioPlayer');
+
+        function uploadMusic(event) {
+            const files = event.target.files;
+            for (let file of files) {
+                if (file.type.startsWith('audio/')) {
+                    const url = URL.createObjectURL(file);
+                    playlist.push({
+                        name: file.name.replace(/\.[^/.]+$/, ''),
+                        url: url,
+                        file: file
+                    });
+                }
+            }
+            updatePlaylist();
+        }
+
+        function updatePlaylist() {
+            const container = document.getElementById('playlistContainer');
+            container.innerHTML = '';
+
+            if (playlist.length === 0) {
+                container.innerHTML = '<p style="color: rgba(255,255,255,0.5); font-size: 11px;">No tracks uploaded</p>';
+                return;
+            }
+
+            playlist.forEach((track, index) => {
+                const item = document.createElement('div');
+                item.className = 'playlist-item' + (currentTrackIndex === index ? ' active' : '');
+                item.innerHTML = `
+                    <span onclick="playTrack(${index})" style="flex: 1;">${track.name}</span>
+                    <button class="delete-btn" onclick="deleteTrack(${index})">✕</button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function playTrack(index) {
+            currentTrackIndex = index;
+            audio.src = playlist[index].url;
+            audio.play();
+            updatePlaylist();
+        }
+
+        function playMusic() {
+            if (playlist.length === 0) {
+                alert('Please upload an MP3 file first!');
+                return;
+            }
+            if (audio.src === '') {
+                playTrack(0);
+            } else {
+                audio.play();
+            }
+        }
+
+        function pauseMusic() {
+            audio.pause();
+        }
+
+        function stopMusic() {
+            audio.pause();
+            audio.currentTime = 0;
+        }
+
+        function setVolume(value) {
+            audio.volume = value / 100;
+        }
+
+        function deleteTrack(index) {
+            playlist.splice(index, 1);
+            if (currentTrackIndex >= playlist.length && playlist.length > 0) {
+                currentTrackIndex = playlist.length - 1;
+            }
+            updatePlaylist();
+        }
+
+        function seekMusic(event) {
+            const bar = event.currentTarget;
+            const clickX = event.offsetX;
+            const width = bar.offsetWidth;
+            const duration = audio.duration;
+            if (duration) {
+                audio.currentTime = (clickX / width) * duration;
+            }
+        }
+
+        function togglePlayer() {
+            const player = document.getElementById('musicPlayer');
+            player.classList.toggle('minimized');
+            document.getElementById('playerToggle').textContent = player.classList.contains('minimized') ? '+' : '−';
+        }
+
+        // Update progress bar
+        audio.addEventListener('timeupdate', () => {
+            if (audio.duration) {
+                const progress = (audio.currentTime / audio.duration) * 100;
+                document.getElementById('progress').style.width = progress + '%';
+            }
+
+            const minutes = Math.floor(audio.currentTime / 60);
+            const seconds = Math.floor(audio.currentTime % 60);
+            const totalMinutes = Math.floor(audio.duration / 60);
+            const totalSeconds = Math.floor(audio.duration % 60);
+
+            document.getElementById('timeDisplay').textContent = 
+                `${minutes}:${seconds < 10 ? '0' : ''}${seconds} / ${isNaN(totalMinutes) ? '0' : totalMinutes}:${isNaN(totalSeconds) ? '0' : totalSeconds < 10 ? '0' : ''}${isNaN(totalSeconds) ? '0' : totalSeconds}`;
+        });
+
+        // Auto-play next track
+        audio.addEventListener('ended', () => {
+            if (currentTrackIndex < playlist.length - 1) {
+                playTrack(currentTrackIndex + 1);
+            }
+        });
+
+        // ============ LIGHTNING EFFECT ============
+        function generateLightning() {
+            const bg = document.getElementById('lightningBg');
+            const lightning = document.createElement('div');
+            lightning.className = 'lightning';
+            lightning.style.left = Math.random() * 100 + '%';
+            lightning.style.height = Math.random() * 60 + 40 + '%';
+            lightning.style.animationDelay = Math.random() * 2 + 's';
+            bg.appendChild(lightning);
+
+            setTimeout(() => lightning.remove(), 4000);
+        }
+
+        setInterval(generateLightning, 800);
+
+        // Initialize playlist display
+        updatePlaylist();
+    </script>
+</body>
+</html>
